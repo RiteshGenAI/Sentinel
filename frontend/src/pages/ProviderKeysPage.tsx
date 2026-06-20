@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../lib/api'
 import type { ProviderOut, MasterKeyOut, ChildKeyWithSecret, ChildKeySummary, Project } from '../types'
+import { formatCost } from './DashboardPage'
 
 export default function ProviderKeysPage() {
   const [providers, setProviders] = useState<ProviderOut[]>([])
@@ -343,124 +344,159 @@ export default function ProviderKeysPage() {
         </section>
       </div>
 
-      {/* Master Keys List */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Configured Master Credentials</h3>
-        <div className="space-y-3">
-          {masterKeys.map((k) => (
-            <div key={k.id} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 hover:border-slate-350 transition">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold text-slate-800">{k.name}</p>
-                    <span className="rounded-full bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 text-3xs font-bold text-indigo-600">
-                      {getProviderName(k.provider_id)}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-550">
-                    <span className="font-mono bg-white border border-slate-250 px-2 py-0.5 rounded text-2xs text-slate-600">{k.key_prefix}...</span>
-                    <span>•</span>
-                    <span>{k.total_requests.toLocaleString()} requests</span>
-                    <span>•</span>
-                    <span className="text-cyan-600 font-bold">${k.total_cost_usd.toFixed(4)} spent</span>
-                    <span>•</span>
-                    <span>{k.total_tokens.toLocaleString()} tokens</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => revokeMaster(k.id)}
-                  className="rounded-lg bg-rose-50 border border-rose-100 text-rose-600 px-3.5 py-1.5 text-xs font-bold hover:bg-rose-500 hover:text-white transition duration-200"
-                >
-                  Revoke
-                </button>
-              </div>
-            </div>
-          ))}
-          {masterKeys.length === 0 && (
-            <p className="text-sm text-slate-400 text-center py-6">No master provider credentials configured.</p>
-          )}
-        </div>
-      </section>
+      {/* Grouped Provider Workspaces */}
+      <div className="space-y-6">
+        <h3 className="text-xl font-black text-slate-900">Provider Workspaces</h3>
+        
+        {providers.map((p) => {
+          const pMasterKeys = masterKeys.filter(k => k.provider_id === p.id)
+          const pChildKeys = childKeys.filter(k => k.provider_id === p.id)
+          
+          if (pMasterKeys.length === 0 && pChildKeys.length === 0) {
+            return null
+          }
 
-      {/* Child Keys List */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Issued Scoped Child Keys</h3>
-        <div className="space-y-4">
-          {childKeys.map((k) => {
-            const s = summaries[k.id]
-            const totalCost = s ? s.total_cost_usd : k.total_cost_usd
-            const totalRequests = s ? s.total_requests : k.total_requests
-            const totalTokens = s ? s.total_tokens : k.total_tokens
-            const remaining = s ? s.remaining_usd : k.cost_limit_usd - totalCost
-            const ratio = k.cost_limit_usd > 0 ? totalCost / k.cost_limit_usd : 0
-            
-            return (
-              <div key={k.id} className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 hover:border-slate-350 transition">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-slate-800">{k.name}</p>
-                      <span className="rounded-full bg-cyan-50 border border-cyan-100 px-2.5 py-0.5 text-3xs font-bold text-cyan-600">
-                        {getProviderName(k.provider_id)}
-                      </span>
-                      {k.project_id && (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-3xs font-bold text-slate-600">
-                          {getProjectName(k.project_id)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-550">
-                      <span className="font-mono bg-white border border-slate-250 px-2 py-0.5 rounded text-2xs text-slate-600">{k.key_prefix}...</span>
-                      <span>•</span>
-                      <span>{totalRequests.toLocaleString()} requests</span>
-                      <span>•</span>
-                      <span>{totalTokens.toLocaleString()} tokens</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 self-end sm:self-center">
-                    <span className={`rounded-lg px-2 py-0.5 text-2xs font-extrabold uppercase border ${
-                      k.is_active
-                        ? 'bg-emerald-50 border-emerald-100 text-emerald-600'
-                        : 'bg-slate-100 border-slate-200 text-slate-450'
-                    }`}>
-                      {k.is_active ? 'Active' : 'Revoked'}
+          return (
+            <div key={p.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <h4 className="text-lg font-bold text-slate-900">{p.display_name} Workspace</h4>
+                </div>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-2xs font-bold text-slate-600 uppercase tracking-wider">
+                  {p.name}
+                </span>
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-2">
+                {/* Master Credentials Column */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h5 className="text-xs font-bold uppercase tracking-wider text-slate-455">Master Credentials</h5>
+                    <span className="rounded-full bg-slate-50 border border-slate-200 px-2 py-0.5 text-3xs font-bold text-slate-500">
+                      {pMasterKeys.length} configured
                     </span>
-                    {k.is_active && (
-                      <button
-                        onClick={() => revokeChild(k.id)}
-                        className="rounded-lg bg-rose-50 border border-rose-100 text-rose-600 px-3 py-1.5 text-xs font-bold hover:bg-rose-500 hover:text-white transition duration-200"
-                      >
-                        Revoke
-                      </button>
+                  </div>
+                  <div className="space-y-3">
+                    {pMasterKeys.map((k) => (
+                      <div key={k.id} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 hover:border-slate-300 transition">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-slate-800 text-sm">{k.name}</p>
+                            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-slate-500">
+                              <span className="font-mono bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-600">{k.key_prefix}...</span>
+                              <span>•</span>
+                              <span>{k.total_requests.toLocaleString()} reqs</span>
+                              <span>•</span>
+                              <span className="text-cyan-600 font-bold">{formatCost(k.total_cost_usd)} spent</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => revokeMaster(k.id)}
+                            className="rounded-lg bg-rose-50 border border-rose-100 text-rose-600 px-3 py-1 text-xs font-bold hover:bg-rose-500 hover:text-white transition duration-200"
+                          >
+                            Revoke
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {pMasterKeys.length === 0 && (
+                      <p className="text-xs text-slate-400 py-4 text-center border border-dashed border-slate-200 rounded-xl">No master credentials configured.</p>
                     )}
                   </div>
                 </div>
-                
-                <div className="mt-4 pt-3 border-t border-slate-200">
-                  <div className="flex justify-between text-xs font-semibold mb-2">
-                    <span className="text-slate-550 font-medium">Spent: <span className="text-slate-900 font-bold">${totalCost.toFixed(4)}</span> / ${k.cost_limit_usd.toFixed(2)}</span>
-                    <span className={ratio >= 0.9 ? 'text-rose-600' : ratio >= 0.7 ? 'text-amber-600' : 'text-emerald-600'}>
-                      {remaining > 0 ? `$${remaining.toFixed(2)} remaining` : 'Limit reached'}
+
+                {/* Scoped Child Keys Column */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h5 className="text-xs font-bold uppercase tracking-wider text-slate-455">Scoped Child Keys</h5>
+                    <span className="rounded-full bg-slate-50 border border-slate-200 px-2 py-0.5 text-3xs font-bold text-slate-500">
+                      {pChildKeys.length} active
                     </span>
                   </div>
-                  <div className="h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        ratio >= 0.9 ? 'bg-rose-500' : ratio >= 0.7 ? 'bg-amber-500' : 'bg-emerald-500'
-                      }`}
-                      style={{ width: `${Math.min(ratio * 100, 100)}%` }}
-                    />
+                  <div className="space-y-4">
+                    {pChildKeys.map((k) => {
+                      const s = summaries[k.id]
+                      const totalCost = s ? s.total_cost_usd : k.total_cost_usd
+                      const totalRequests = s ? s.total_requests : k.total_requests
+                      const totalTokens = s ? s.total_tokens : k.total_tokens
+                      const remaining = s ? s.remaining_usd : k.cost_limit_usd - totalCost
+                      const ratio = k.cost_limit_usd > 0 ? totalCost / k.cost_limit_usd : 0
+
+                      return (
+                        <div key={k.id} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 hover:border-slate-300 transition">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-200/60">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-slate-800 text-sm">{k.name}</p>
+                                {k.project_id && (
+                                  <span className="rounded bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-3xs font-bold text-slate-600">
+                                    {getProjectName(k.project_id)}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-slate-500">
+                                <span className="font-mono bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-600">{k.key_prefix}...</span>
+                                <span>•</span>
+                                <span>{totalRequests.toLocaleString()} reqs</span>
+                                <span>•</span>
+                                <span>{totalTokens.toLocaleString()} tokens</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 self-end sm:self-center">
+                              <span className={`rounded px-1.5 py-0.5 text-3xs font-bold uppercase border ${
+                                k.is_active
+                                  ? 'bg-emerald-50 border-emerald-100 text-emerald-600'
+                                  : 'bg-slate-100 border-slate-200 text-slate-455'
+                              }`}>
+                                {k.is_active ? 'Active' : 'Revoked'}
+                              </span>
+                              {k.is_active && (
+                                <button
+                                  onClick={() => revokeChild(k.id)}
+                                  className="rounded-lg bg-rose-50 border border-rose-100 text-rose-600 px-2.5 py-1 text-xs font-bold hover:bg-rose-500 hover:text-white transition duration-200"
+                                >
+                                  Revoke
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mt-3">
+                            <div className="flex justify-between text-2xs font-semibold mb-1.5">
+                              <span className="text-slate-550">Spent: <span className="text-slate-900 font-bold">{formatCost(totalCost)}</span> / ${k.cost_limit_usd.toFixed(2)}</span>
+                              <span className={ratio >= 0.9 ? 'text-rose-600' : ratio >= 0.7 ? 'text-amber-600' : 'text-emerald-600'}>
+                                {remaining > 0 ? `${formatCost(remaining)} left` : 'Limit reached'}
+                              </span>
+                            </div>
+                            <div className="h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${
+                                  ratio >= 0.9 ? 'bg-rose-500' : ratio >= 0.7 ? 'bg-amber-500' : 'bg-emerald-500'
+                                }`}
+                                style={{ width: `${Math.min(ratio * 100, 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {pChildKeys.length === 0 && (
+                      <p className="text-xs text-slate-400 py-4 text-center border border-dashed border-slate-200 rounded-xl">No scoped child keys generated.</p>
+                    )}
                   </div>
                 </div>
               </div>
-            )
-          })}
-          {childKeys.length === 0 && (
-            <p className="text-sm text-slate-450 text-center py-6">No child keys generated yet.</p>
-          )}
-        </div>
-      </section>
+            </div>
+          )
+        })}
+
+        {masterKeys.length === 0 && childKeys.length === 0 && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+            <p className="text-sm text-slate-400">No credentials or child keys configured yet. Generate them above to begin.</p>
+          </div>
+        )}
+      </div>
 
       {/* Usage Example */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

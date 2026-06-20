@@ -71,3 +71,5 @@ Thumbs.db
 # Database / Docker
 postgres_data/
 .docker-volumes/
+*.db
+*.sqlite

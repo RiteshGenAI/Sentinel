@@ -3,12 +3,27 @@ import { Link } from 'react-router-dom'
 import api from '../lib/api'
 import type { Project, BudgetStatus, User } from '../types'
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+  AreaChart, Area
 } from 'recharts'
 
 type Props = { user: User }
 
 type ProjectWithCost = Project & { total_cost_usd?: number }
+
+export function formatCost(value: number): string {
+  if (value === 0) return '$0.00'
+  if (value < 0.01) {
+    return '$' + value.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 6
+    })
+  }
+  return '$' + value.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4
+  })
+}
 
 export default function DashboardPage({ user }: Props) {
   const [projects, setProjects] = useState<ProjectWithCost[]>([])
@@ -19,14 +34,16 @@ export default function DashboardPage({ user }: Props) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [chartData, setChartData] = useState<any[]>([])
+  const [analytics, setAnalytics] = useState<any>(null)
 
   const loadData = async (isBackground = false) => {
     if (!isBackground) setLoading(true)
     try {
-      const [p, s, t] = await Promise.all([
+      const [p, s, t, a] = await Promise.all([
         api.get<Project[]>('/projects/'),
         api.get<BudgetStatus[]>('/budgets/status'),
-        api.get<{ total_spent_usd: number }>('/budgets/total-spent')
+        api.get<{ total_spent_usd: number }>('/budgets/total-spent'),
+        api.get<any>('/analytics/dashboard')
       ])
 
       const projs = p.data
@@ -44,6 +61,7 @@ export default function DashboardPage({ user }: Props) {
       setProjects(projectsWithCosts)
       setStatuses(s.data)
       setTotalSpent(t.data.total_spent_usd)
+      setAnalytics(a.data)
 
       // Build chart data: Cost vs Limit if budgets exist, otherwise show Project Costs
       if (s.data.length > 0) {
@@ -139,15 +157,15 @@ export default function DashboardPage({ user }: Props) {
         {/* Total Spent */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6 relative overflow-hidden group hover:border-slate-350 transition duration-300 shadow-sm">
           <div className="absolute top-0 right-0 h-24 w-24 -mr-8 -mt-8 rounded-full bg-cyan-100/40 blur-2xl group-hover:bg-cyan-100/60 transition duration-300" />
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-450">Total spent</p>
-          <p className="mt-4 text-3xl font-black text-slate-900 tracking-tight">${totalSpent.toFixed(4)}</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-455">Total spent</p>
+          <p className="mt-4 text-3xl font-black text-slate-900 tracking-tight">{formatCost(totalSpent)}</p>
           <div className="mt-2 text-xs font-medium text-slate-500">Across all projects</div>
         </div>
 
         {/* Total Budgets */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6 relative overflow-hidden group hover:border-slate-350 transition duration-300 shadow-sm">
           <div className="absolute top-0 right-0 h-24 w-24 -mr-8 -mt-8 rounded-full bg-indigo-100/40 blur-2xl group-hover:bg-indigo-100/60 transition duration-300" />
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-450">Total budgeted</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-455">Total budgeted</p>
           <p className="mt-4 text-3xl font-black text-slate-900 tracking-tight">${totalBudgeted.toFixed(2)}</p>
           <div className="mt-2 text-xs font-medium text-slate-500">Limit ceiling</div>
         </div>
@@ -155,7 +173,7 @@ export default function DashboardPage({ user }: Props) {
         {/* Projects */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6 relative overflow-hidden group hover:border-slate-350 transition duration-300 shadow-sm">
           <div className="absolute top-0 right-0 h-24 w-24 -mr-8 -mt-8 rounded-full bg-violet-100/40 blur-2xl group-hover:bg-violet-100/60 transition duration-300" />
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-450">Active Projects</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-455">Active Projects</p>
           <p className="mt-4 text-3xl font-black text-slate-900 tracking-tight">{projects.length}</p>
           <div className="mt-2 text-xs font-medium text-slate-500">Configured groups</div>
         </div>
@@ -163,13 +181,49 @@ export default function DashboardPage({ user }: Props) {
         {/* Critical Limits */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6 relative overflow-hidden group hover:border-slate-350 transition duration-300 shadow-sm">
           <div className="absolute top-0 right-0 h-24 w-24 -mr-8 -mt-8 rounded-full bg-rose-100/40 blur-2xl group-hover:bg-rose-100/60 transition duration-300" />
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-450">Alert Status</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-455">Alert Status</p>
           <p className={`mt-4 text-3xl font-black tracking-tight ${criticalBudgets > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
             {criticalBudgets > 0 ? `${criticalBudgets} Critical` : 'Healthy'}
           </p>
           <div className="mt-2 text-xs font-medium text-slate-500">Over-budget count</div>
         </div>
       </div>
+
+      {/* Forecast Status Widget */}
+      {analytics?.forecast && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Monthly Spending Forecast</h3>
+            <p className="text-xs text-slate-500 mt-1">Based on telemetry patterns over the past {analytics.forecast.days_of_data} days.</p>
+          </div>
+          <div className="flex flex-wrap gap-6">
+            <div className="min-w-[120px]">
+              <span className="text-xs text-slate-400 font-semibold block uppercase">Avg Daily Cost</span>
+              <span className="text-lg font-bold text-slate-800">{formatCost(analytics.forecast.avg_daily_cost)}</span>
+            </div>
+            <div className="min-w-[120px]">
+              <span className="text-xs text-slate-400 font-semibold block uppercase">Projected Monthly</span>
+              <span className="text-lg font-bold text-slate-800">{formatCost(analytics.forecast.projected_monthly_cost)}</span>
+            </div>
+            <div className="min-w-[120px]">
+              <span className="text-xs text-slate-400 font-semibold block uppercase">Total Budget Limit</span>
+              <span className="text-lg font-bold text-slate-800">${analytics.forecast.total_budget_limit.toFixed(2)}</span>
+            </div>
+            <div className="min-w-[120px]">
+              <span className="text-xs text-slate-400 font-semibold block uppercase">Risk Profile</span>
+              <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wide border ${
+                analytics.forecast.risk_level === 'high'
+                  ? 'bg-rose-50 border-rose-100 text-rose-600'
+                  : analytics.forecast.risk_level === 'medium'
+                  ? 'bg-amber-50 border-amber-100 text-amber-600'
+                  : 'bg-emerald-50 border-emerald-100 text-emerald-650'
+              }`}>
+                {analytics.forecast.risk_level} Risk
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Chart Section */}
       {chartData.length > 0 && (
@@ -194,10 +248,11 @@ export default function DashboardPage({ user }: Props) {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} />
-                <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}
                   labelClassName="text-slate-800 text-xs font-bold"
+                  formatter={(v: any) => [formatCost(Number(v)), 'Value']}
                 />
                 <Legend iconType="circle" wrapperStyle={{ paddingTop: 15 }} />
                 <Bar name={statuses.length > 0 ? 'Actual Cost ($)' : 'Total Cost ($)'} dataKey="cost" fill="url(#colorCost)" radius={[4, 4, 0, 0]} />
@@ -206,6 +261,116 @@ export default function DashboardPage({ user }: Props) {
                 )}
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Telemetry Analytics Grid */}
+      {analytics && (
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Chart 1: Token Usage Timeline */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="text-base font-bold text-slate-900">Token Volume Timeline</h3>
+            <p className="text-xs text-slate-500 mb-4">Daily token inputs vs outputs over the last 30 days.</p>
+            <div className="h-[240px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={analytics.timeline} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorPrompt" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0.1}/>
+                    </linearGradient>
+                    <linearGradient id="colorCompletion" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#a855f7" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="day" stroke="#64748b" fontSize={10} tickLine={false} />
+                  <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}
+                    labelClassName="text-slate-800 text-xs font-bold"
+                  />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: 10 }} />
+                  <Area name="Prompt Input" type="monotone" dataKey="prompt_tokens" stroke="#6366f1" fillOpacity={1} fill="url(#colorPrompt)" />
+                  <Area name="Completion Output" type="monotone" dataKey="completion_tokens" stroke="#a855f7" fillOpacity={1} fill="url(#colorCompletion)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Chart 2: Rate Limits & API Health */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="text-base font-bold text-slate-900">API Health & Rate Limits</h3>
+            <p className="text-xs text-slate-500 mb-4">Timeline of rate limits (HTTP 429) vs other client/provider errors.</p>
+            <div className="h-[240px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analytics.timeline} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="day" stroke="#64748b" fontSize={10} tickLine={false} />
+                  <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}
+                    labelClassName="text-slate-800 text-xs font-bold"
+                  />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: 10 }} />
+                  <Bar name="Rate Limits (429)" dataKey="rate_limits" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  <Bar name="Other Errors" dataKey="other_errors" fill="#f97316" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Chart 3: Cost breakdown by LLM Model */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="text-base font-bold text-slate-900">Total Cost by Model</h3>
+            <p className="text-xs text-slate-500 mb-4">Visual spend allocation per individual LLM model.</p>
+            <div className="h-[240px] w-full">
+              {analytics.model_costs && analytics.model_costs.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analytics.model_costs} layout="vertical" margin={{ top: 10, right: 10, left: 30, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                    <XAxis type="number" stroke="#64748b" fontSize={10} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                    <YAxis dataKey="model" type="category" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}
+                      labelClassName="text-slate-800 text-xs font-bold"
+                      formatter={(v: any) => [formatCost(Number(v)), 'Cost']}
+                    />
+                    <Bar name="Total Cost" dataKey="total_cost_usd" fill="#06b6d4" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-slate-400">No model usage data available.</div>
+              )}
+            </div>
+          </div>
+
+          {/* Chart 4: Average Tokens per Project */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="text-base font-bold text-slate-900">Average Tokens per Project</h3>
+            <p className="text-xs text-slate-500 mb-4">Comparative average token consumption per API call.</p>
+            <div className="h-[240px] w-full">
+              {analytics.project_averages && analytics.project_averages.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analytics.project_averages} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
+                    <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}
+                      labelClassName="text-slate-800 text-xs font-bold"
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ paddingTop: 10 }} />
+                    <Bar name="Avg Prompt Tokens" dataKey="avg_prompt_tokens" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                    <Bar name="Avg Completion Tokens" dataKey="avg_completion_tokens" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-slate-400">No project usage data available.</div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -224,7 +389,7 @@ export default function DashboardPage({ user }: Props) {
               <div key={p.id} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 hover:border-slate-350 transition">
                 <div className="flex items-center justify-between">
                   <p className="font-semibold text-slate-850">{p.name}</p>
-                  <span className="text-xs text-slate-500 font-mono">Cost: ${(p.total_cost_usd || 0).toFixed(4)}</span>
+                  <span className="text-xs text-slate-500 font-mono">Cost: {formatCost(p.total_cost_usd || 0)}</span>
                 </div>
                 <p className="mt-2 text-xs text-slate-500 leading-relaxed">{p.description || 'No description provided.'}</p>
               </div>
@@ -262,7 +427,7 @@ export default function DashboardPage({ user }: Props) {
                   </div>
                   
                   <div className="flex justify-between text-xs text-slate-500 mb-1.5 font-medium">
-                    <span>${s.total_cost_usd.toFixed(4)} spent</span>
+                    <span>{formatCost(s.total_cost_usd)} spent</span>
                     <span>Limit: ${s.limit_usd.toFixed(2)}</span>
                   </div>
 

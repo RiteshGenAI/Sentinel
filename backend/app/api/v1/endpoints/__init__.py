@@ -11,3 +11,5 @@ from app.api.v1.endpoints.providers import router as providers_router
 from app.api.v1.endpoints.master_keys import router as master_keys_router
 from app.api.v1.endpoints.child_keys import router as child_keys_router
 from app.api.v1.endpoints.proxy import router as proxy_router
+from app.api.v1.endpoints.analytics import router as analytics_router
+
