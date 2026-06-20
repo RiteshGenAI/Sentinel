@@ -11,8 +11,27 @@ export default function Navbar({ user, onLogout }: Props) {
     <header className="sticky top-0 z-50 border-b border-slate-250 bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between px-8 py-4">
         <div className="flex items-center gap-4">
-          <Link to="/" className="flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 hover:opacity-90 transition">
-            <span className="bg-gradient-to-r from-cyan-600 to-indigo-650 bg-clip-text text-transparent">Sentinel</span>
+          <Link to="/" className="flex items-center gap-2.5 text-xl font-extrabold tracking-tight hover:opacity-90 transition">
+            {/* Mini Shield Logo Icon */}
+            <svg className="h-6 w-6" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="navPrimaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#6366f1"/>
+                  <stop offset="100%" stop-color="#06b6d4"/>
+                </linearGradient>
+                <linearGradient id="navInnerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#a78bfa"/>
+                  <stop offset="100%" stop-color="#22d3ee"/>
+                </linearGradient>
+              </defs>
+              <path d="M 120,20 L 205,65 L 205,140 C 205,185 120,220 120,220 C 120,220 35,185 35,140 L 35,65 Z" stroke="url(#navPrimaryGrad)" stroke-width="12" stroke-linejoin="round" />
+              <path d="M 55,120 C 75,85 100,70 120,70 C 140,70 165,85 185,120 C 165,155 140,170 120,170 C 100,170 75,155 55,120 Z" stroke="url(#navInnerGrad)" stroke-width="6" stroke-linejoin="round" />
+              <circle cx="120" cy="120" r="22" fill="url(#navPrimaryGrad)" />
+              <circle cx="120" cy="120" r="8" fill="#1e1b4b" />
+            </svg>
+            <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 bg-clip-text text-transparent font-black" style={{ backgroundClip: 'text', WebkitBackgroundClip: 'text' }}>
+              Sentinel
+            </span>
           </Link>
           <span className="h-4 w-[1px] bg-slate-200 hidden sm:block"></span>
           <p className="hidden text-xs font-semibold text-slate-500 sm:block uppercase tracking-wider">Cost Intelligence</p>
