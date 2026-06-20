@@ -157,7 +157,7 @@ export default function ProviderKeysPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10 space-y-8 bg-slate-55">
+    <div className="mx-auto max-w-6xl px-6 py-10 space-y-8 bg-slate-50">
       {/* Header */}
       <div>
         <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Provider & Key Management</h2>
