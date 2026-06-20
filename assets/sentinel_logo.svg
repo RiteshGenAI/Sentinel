@@ -118,25 +118,32 @@
   </g>
 
   <!-- ============================================================ -->
-  <!-- WORDMARK (right side)                                        -->
+  <!-- WORDMARK (right side, vertically centered with shield)       -->
   <!-- ============================================================ -->
   <!-- "SENTINEL" main text -->
-  <text x="230" y="130" 
+  <text x="235" y="105" 
         text-anchor="start" 
         dominant-baseline="central"
         font-family="'Inter', 'Segoe UI', system-ui, sans-serif" 
-        font-size="72" 
+        font-size="68" 
         font-weight="800" 
-        letter-spacing="8" 
+        letter-spacing="10" 
         fill="url(#primaryGrad)">SENTINEL</text>
 
+  <!-- Thin separator line -->
+  <line x1="238" y1="132" x2="810" y2="132" 
+        stroke="url(#innerGrad)" 
+        stroke-width="1" 
+        opacity="0.3"/>
+
   <!-- Tagline -->
-  <text x="234" y="165" 
+  <text x="238" y="155" 
         text-anchor="start" 
+        dominant-baseline="central"
         font-family="'Inter', 'Segoe UI', system-ui, sans-serif" 
-        font-size="14" 
+        font-size="16" 
         font-weight="500" 
-        letter-spacing="5" 
+        letter-spacing="6" 
         fill="url(#innerGrad)"
-        opacity="0.7">COST INTELLIGENCE &amp; LLM GATEWAY</text>
+        opacity="0.65">COST INTELLIGENCE &amp; LLM GATEWAY</text>
 </svg>
