@@ -121,7 +121,7 @@
   <!-- WORDMARK (right side, vertically centered and center-aligned)-->
   <!-- ============================================================ -->
   <!-- "SENTINEL" main text -->
-  <text x="550" y="105" 
+  <text x="480" y="105" 
         text-anchor="middle" 
         dominant-baseline="central"
         font-family="'Inter', 'Segoe UI', system-ui, sans-serif" 
@@ -131,13 +131,13 @@
         fill="url(#primaryGrad)">SENTINEL</text>
 
   <!-- Thin separator line -->
-  <line x1="300" y1="132" x2="800" y2="132" 
+  <line x1="260" y1="132" x2="700" y2="132" 
         stroke="url(#innerGrad)" 
         stroke-width="1" 
         opacity="0.3"/>
 
   <!-- Tagline -->
-  <text x="550" y="155" 
+  <text x="480" y="155" 
         text-anchor="middle" 
         dominant-baseline="central"
         font-family="'Inter', 'Segoe UI', system-ui, sans-serif" 
