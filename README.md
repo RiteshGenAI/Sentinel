@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/sentinel_logo.png" alt="Sentinel Logo Banner" width="800">
+</p>
+
 # 🛡️ Sentinel: Enterprise Cost Intelligence & LLM Gateway
 
 **Sentinel** is a modern, enterprise-grade Cost Intelligence platform and LLM Gateway. It allows organizations to manage, track, forecast, and optimize LLM API usage and costs through centralized provider management and dynamically scoped child API keys with built-in real-time spending limits.
