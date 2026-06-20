@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.init_db import init_db
 from app.api.v1.endpoints import auth, projects, ingest, budgets, admin, health, forecast, export, api_keys, providers, master_keys, child_keys, proxy
-from app.core.middleware import RequestLoggingMiddleware, ErrorHandlingMiddleware
+from app.core.middleware import RequestLoggingMiddleware, ErrorHandlingMiddleware, RateLimitingMiddleware
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -16,6 +16,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title='Sentinel Fullstack API', lifespan=lifespan)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(ErrorHandlingMiddleware)
+app.add_middleware(RateLimitingMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=['http://localhost:5173'],

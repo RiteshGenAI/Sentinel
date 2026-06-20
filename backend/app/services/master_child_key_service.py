@@ -19,6 +19,9 @@ def _generate_key(prefix: str = 'sk_child_') -> str:
 # ============ MASTER KEY ============
 
 def add_master_key(db: Session, provider_id: int, raw_key: str, name: str = 'Default') -> MasterKey:
+    """
+    Encrypts and saves a new provider master API key to the database.
+    """
     provider = get_provider(db, provider_id)
     if not provider:
         raise HTTPException(status_code=404, detail='Provider not found')
@@ -54,12 +57,18 @@ def get_decrypted_master_key(db: Session, master_key_id: int) -> str | None:
         return None
 
 def list_master_keys(db: Session, provider_id: int | None = None, skip: int = 0, limit: int = 100):
+    """
+    Lists active master API credentials with optional provider filtering.
+    """
     query = db.query(MasterKey).filter(MasterKey.is_active == True)
     if provider_id is not None:
         query = query.filter(MasterKey.provider_id == provider_id)
     return query.offset(skip).limit(limit).all()
 
 def revoke_master_key(db: Session, key_id: int) -> bool:
+    """
+    Deactivates a master key by marking is_active = False.
+    """
     key = db.query(MasterKey).filter(MasterKey.id == key_id).first()
     if not key:
         return False
@@ -92,6 +101,9 @@ def check_master_key_rate_limit(db: Session, key: MasterKey, provider: Provider)
     return True
 
 def track_master_key_usage(db: Session, key: MasterKey, cost: float, tokens: int, child_key_id: int | None, request_path: str | None, status_code: int | None):
+    """
+    Updates total spend and request aggregates for a master key, and logs a MasterKeyUsage record.
+    """
     key.total_cost_usd += cost
     key.total_requests += 1
     key.total_tokens += tokens
@@ -111,6 +123,9 @@ def track_master_key_usage(db: Session, key: MasterKey, cost: float, tokens: int
 # ============ CHILD KEY ============
 
 def create_child_key(db: Session, user_id: int, provider_id: int, name: str, cost_limit_usd: float = 20.0, expires_days: int | None = None, project_id: int | None = None) -> tuple[ChildKey, str]:
+    """
+    Generates a secure child API key, hashes it for database search, and links it to a project scope.
+    """
     provider = get_provider(db, provider_id)
     if not provider:
         raise HTTPException(status_code=404, detail='Provider not found')
@@ -138,6 +153,9 @@ def create_child_key(db: Session, user_id: int, provider_id: int, name: str, cos
     return child, raw
 
 def validate_child_key(db: Session, raw_key: str | None) -> ChildKey | None:
+    """
+    Validates if a child key is active, exists, and is not past its expiration date.
+    """
     if not raw_key:
         return None
     key_hash = _hash_key(raw_key)
@@ -170,9 +188,15 @@ def revoke_child_key(db: Session, key_id: int, user_id: int | None = None) -> bo
     return True
 
 def check_child_key_limit(db: Session, key: ChildKey, cost: float) -> bool:
+    """
+    Checks if adding the estimated cost would exceed the child key's budget limits.
+    """
     return key.total_cost_usd + cost <= key.cost_limit_usd
 
 def track_child_key_usage(db: Session, key: ChildKey, cost: float, tokens: int, master_key_id: int | None, request_path: str | None, status_code: int | None, error: str | None = None):
+    """
+    Logs actual child key completion transactions, updating spent statistics and inserting usage records.
+    """
     key.total_cost_usd += cost
     key.total_requests += 1
     key.total_tokens += tokens
@@ -217,7 +241,9 @@ def get_child_key_summary(db: Session, key_id: int) -> dict:
     }
 
 def get_provider_stats(db: Session, provider_id: int) -> dict:
-    """Get aggregated stats for a provider."""
+    """
+    Aggregates active keys, requests count, and total spend for a given AI provider.
+    """
     master_count = db.query(func.count(MasterKey.id)).filter(MasterKey.provider_id == provider_id, MasterKey.is_active == True).scalar() or 0
     child_count = db.query(func.count(ChildKey.id)).filter(ChildKey.provider_id == provider_id, ChildKey.is_active == True).scalar() or 0
     total_cost = db.query(func.sum(MasterKeyUsage.cost_usd)).filter(MasterKeyUsage.master_key_id.in_(
