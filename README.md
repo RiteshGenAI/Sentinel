@@ -92,7 +92,7 @@ curl -X POST http://localhost:8000/api/v1/proxy/chat/completions \
   -H "Authorization: Bearer sk_child_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gemini-1.5-flash",
+    "model": "gemini-3.5-flash",
     "messages": [{"role": "user", "content": "Hello! Speak in one sentence."}]
   }'
 ```
