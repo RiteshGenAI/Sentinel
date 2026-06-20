@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#4f46e5" />
+      <stop offset="100%" stop-color="#818cf8" />
+    </linearGradient>
+  </defs>
+  <g>
+    <!-- Outer Shield Border -->
+    <path d="M 400,130 L 620,240 L 620,460 C 620,580 400,680 400,680 C 400,680 180,580 180,460 L 180,240 Z" 
+          fill="none" 
+          stroke="url(#shieldGrad)" 
+          stroke-width="36" 
+          stroke-linejoin="round" />
+          
+    <!-- Stylized S shape inside the shield -->
+    <path d="M 240,290 
+             L 560,290 
+             L 560,370 
+             C 560,370 360,390 320,410 
+             C 270,435 270,480 320,505 
+             C 360,525 560,545 560,545 
+             L 400,640 
+             L 240,545 
+             L 240,490 
+             L 380,490 
+             C 420,490 440,470 410,455 
+             C 370,435 240,415 240,415 
+             Z" 
+          fill="url(#shieldGrad)" 
+          stroke="url(#shieldGrad)"
+          stroke-width="12"
+          stroke-linejoin="round"
+          stroke-linecap="round" />
+  </g>
+</svg>
