@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/sentinel_logo.svg" alt="Sentinel Logo Banner" width="400">
+  <img src="assets/sentinel_logo.svg" alt="Sentinel Logo Banner" width="650">
 </p>
 
 # Sentinel: Enterprise Cost Intelligence & LLM Gateway
