@@ -9,7 +9,7 @@ export default function Navbar({ user, onLogout }: Props) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-250 bg-white/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between px-8 py-4">
         <div className="flex items-center gap-4">
           <Link to="/" className="flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 hover:opacity-90 transition">
             <span className="bg-gradient-to-r from-cyan-600 to-indigo-650 bg-clip-text text-transparent">Sentinel</span>

@@ -23,7 +23,7 @@ export default function ForecastPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-6xl px-6 py-12">
+      <div className="mx-auto w-full max-w-[1440px] px-8 py-12">
         <div className="flex flex-col items-center justify-center space-y-4 py-20">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-650" />
           <p className="text-sm font-medium text-slate-500">Loading cost forecasting model...</p>
@@ -33,7 +33,7 @@ export default function ForecastPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10 space-y-8 bg-slate-50">
+    <div className="mx-auto w-full max-w-[1440px] px-8 py-10 space-y-8 bg-slate-50">
       <div>
         <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Cost Forecast</h2>
         <p className="text-sm text-slate-500">Predictive spending analytics based on historical data.</p>

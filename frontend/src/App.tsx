@@ -56,7 +56,7 @@ function App() {
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <Navbar user={user} onLogout={logout} />
       <Suspense fallback={
-        <div className="mx-auto max-w-6xl px-6 py-20 flex flex-col items-center justify-center space-y-4">
+        <div className="mx-auto w-full max-w-[1440px] px-8 py-20 flex flex-col items-center justify-center space-y-4">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-600" />
           <p className="text-sm font-medium text-slate-500">Loading page...</p>
         </div>
