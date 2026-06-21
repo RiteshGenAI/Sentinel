@@ -34,9 +34,11 @@ export default function ForecastPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1440px] px-8 py-10 space-y-8 bg-slate-50">
-      <div>
-        <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Cost Forecast</h2>
-        <p className="text-sm text-slate-500">Predictive spending analytics based on historical data.</p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Cost Forecast</h1>
+          <p className="text-sm text-slate-500">Predictive spending analytics based on historical data.</p>
+        </div>
       </div>
 
       {error && (
@@ -104,6 +106,53 @@ export default function ForecastPage() {
             <p className="text-xs text-slate-500 leading-relaxed">
               Forecasting models are currently running linear regressions over a sliding historical window of <span className="font-semibold text-slate-700">{forecast.days_of_data} days</span> of aggregated token costing telemetry. Risk level computes probability of hitting the configured budget limits within the remaining calendar billing cycle.
             </p>
+          </div>
+
+          {/* Member Projections */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 md:col-span-2 shadow-sm">
+            <h3 className="text-base font-bold text-slate-900 mb-4">Member Cost Projections</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-500">
+                <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <tr>
+                    <th className="px-4 py-3 rounded-l-xl">Team Member</th>
+                    <th className="px-4 py-3">Avg Daily Cost</th>
+                    <th className="px-4 py-3">Projected Monthly</th>
+                    <th className="px-4 py-3">Scoped Limits</th>
+                    <th className="px-4 py-3 rounded-r-xl">Risk Level</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {forecast.member_forecasts?.map((m) => (
+                    <tr key={m.user_id} className="hover:bg-slate-50/50 transition">
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-slate-800">{m.full_name}</p>
+                        <p className="text-3xs text-slate-400">{m.email}</p>
+                      </td>
+                      <td className="px-4 py-3 font-mono font-medium text-slate-700">${m.avg_daily_cost.toFixed(4)}</td>
+                      <td className="px-4 py-3 font-mono font-semibold text-indigo-600">${m.projected_monthly_cost.toFixed(2)}</td>
+                      <td className="px-4 py-3 font-mono text-slate-700">{m.total_limit > 0 ? `$${m.total_limit.toFixed(2)}` : 'None'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide border ${
+                          m.risk_level === 'high'
+                            ? 'bg-rose-50 border-rose-100 text-rose-600'
+                            : m.risk_level === 'medium'
+                            ? 'bg-amber-50 border-amber-100 text-amber-600'
+                            : 'bg-emerald-50 border-emerald-100 text-emerald-650'
+                        }`}>
+                          {m.risk_level}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {(!forecast.member_forecasts || forecast.member_forecasts.length === 0) && (
+                    <tr>
+                      <td colSpan={5} className="text-center py-6 text-slate-400">No member data available.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

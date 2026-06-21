@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
-import Navbar from './components/Navbar'
+import Sidebar from './components/Sidebar'
 import api, { setToken } from './lib/api'
 import type { TokenResponse, User } from './types'
 
@@ -9,7 +9,10 @@ const LoginPage = lazy(() => import('./pages/LoginPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const ForecastPage = lazy(() => import('./pages/ForecastPage'))
-const ProviderKeysPage = lazy(() => import('./pages/ProviderKeysPage'))
+const ProvidersOverviewPage = lazy(() => import('./pages/providers/ProvidersOverviewPage'))
+const MasterKeysPage = lazy(() => import('./pages/providers/MasterKeysPage'))
+const ChildKeysPage = lazy(() => import('./pages/providers/ChildKeysPage'))
+const TelemetryLogsPage = lazy(() => import('./pages/TelemetryLogsPage'))
 
 function App() {
   const [user, setUser] = useState<User | null>(null)
@@ -53,25 +56,34 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <Navbar user={user} onLogout={logout} />
-      <Suspense fallback={
-        <div className="mx-auto w-full max-w-[1440px] px-8 py-20 flex flex-col items-center justify-center space-y-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-600" />
-          <p className="text-sm font-medium text-slate-500">Loading page...</p>
-        </div>
-      }>
-        <Routes>
-          <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage onLogin={handleLogin} />} />
-          <Route path="/dashboard" element={user ? <DashboardPage user={user} /> : <Navigate to="/login" />} />
-          <Route path="/admin" element={user?.role === 'admin' ? <AdminPage /> : <Navigate to="/dashboard" />} />
-          <Route path="/forecast" element={user ? <ForecastPage /> : <Navigate to="/login" />} />
-          <Route path="/providers" element={user ? <ProviderKeysPage /> : <Navigate to="/login" />} />
-          <Route path="/" element={<Navigate to={user ? '/dashboard' : '/login'} />} />
-        </Routes>
-      </Suspense>
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col lg:flex-row">
+      {user && <Sidebar user={user} onLogout={logout} />}
+      <div className={`flex-1 min-w-0 ${user ? 'pt-16 lg:pt-0 lg:pl-64' : ''}`}>
+        <Suspense fallback={
+          <div className="mx-auto w-full max-w-[1440px] px-8 py-20 flex flex-col items-center justify-center space-y-4">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-600" />
+            <p className="text-sm font-medium text-slate-500">Loading page...</p>
+          </div>
+        }>
+          <Routes>
+            <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage onLogin={handleLogin} />} />
+            <Route path="/dashboard" element={user ? <DashboardPage user={user} /> : <Navigate to="/login" />} />
+            <Route path="/admin" element={user?.role === 'admin' ? <AdminPage /> : <Navigate to="/dashboard" />} />
+            <Route path="/forecast" element={user ? <ForecastPage /> : <Navigate to="/login" />} />
+            
+            {/* Split Provider Routes */}
+            <Route path="/providers" element={user ? <ProvidersOverviewPage /> : <Navigate to="/login" />} />
+            <Route path="/providers/master-keys" element={user ? <MasterKeysPage /> : <Navigate to="/login" />} />
+            <Route path="/providers/child-keys" element={user ? <ChildKeysPage /> : <Navigate to="/login" />} />
+            
+            <Route path="/logs" element={user ? <TelemetryLogsPage /> : <Navigate to="/login" />} />
+            <Route path="/" element={<Navigate to={user ? '/dashboard' : '/login'} />} />
+          </Routes>
+        </Suspense>
+      </div>
     </div>
   )
 }
 
 export default App
+

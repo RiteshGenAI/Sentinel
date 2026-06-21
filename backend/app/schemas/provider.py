@@ -2,6 +2,15 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import List
 
+class ProviderCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=60)
+    display_name: str = Field(..., min_length=1, max_length=120)
+    base_url: str = Field(..., min_length=1, max_length=500)
+    api_key_header: str = Field(default='Authorization', max_length=60)
+    rate_limit_rpm: int = Field(default=60, ge=1)
+    rate_limit_tpm: int = Field(default=100000, ge=1)
+    models_json: str | None = Field(default='[]')
+
 class ProviderOut(BaseModel):
     id: int
     name: str
@@ -37,6 +46,7 @@ class ChildKeyCreate(BaseModel):
     cost_limit_usd: float = Field(default=20.0, gt=0)
     expires_days: int | None = None
     project_id: int | None = None
+    user_email: str | None = None
 
 class ChildKeyOut(BaseModel):
     id: int
@@ -53,6 +63,8 @@ class ChildKeyOut(BaseModel):
     created_at: datetime
     expires_at: datetime | None
     last_used_at: datetime | None
+    user_email: str | None = None
+    user_name: str | None = None
     model_config = {'from_attributes': True}
 
 class ChildKeyWithSecret(ChildKeyOut):

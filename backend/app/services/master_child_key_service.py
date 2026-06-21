@@ -187,6 +187,51 @@ def revoke_child_key(db: Session, key_id: int, user_id: int | None = None) -> bo
     db.commit()
     return True
 
+def regenerate_child_key(db: Session, key_id: int, user_id: int | None = None) -> tuple[ChildKey, str]:
+    """
+    Regenerates a child key by creating a new secret key while preserving the original configuration.
+    Deactivates the old key and creates a new one with the same settings.
+    """
+    query = db.query(ChildKey).filter(ChildKey.id == key_id)
+    if user_id is not None:
+        query = query.filter(ChildKey.user_id == user_id)
+    old_key = query.first()
+    if not old_key:
+        raise HTTPException(status_code=404, detail='Child key not found')
+
+    # Preserve the old configuration
+    config = {
+        'user_id': old_key.user_id,
+        'provider_id': old_key.provider_id,
+        'name': old_key.name,
+        'cost_limit_usd': old_key.cost_limit_usd,
+        'project_id': old_key.project_id,
+    }
+
+    # Calculate expiration days if the old key had an expiration
+    expires_days = None
+    if old_key.expires_at:
+        remaining = old_key.expires_at.replace(tzinfo=None) - datetime.now(timezone.utc).replace(tzinfo=None)
+        if remaining.total_seconds() > 0:
+            expires_days = max(1, int(remaining.total_seconds() / 86400))
+
+    # Deactivate the old key
+    old_key.is_active = False
+    db.commit()
+
+    # Create a new key with the same configuration
+    new_key, secret = create_child_key(
+        db,
+        config['user_id'],
+        config['provider_id'],
+        config['name'],
+        config['cost_limit_usd'],
+        expires_days,
+        config['project_id']
+    )
+
+    return new_key, secret
+
 def check_child_key_limit(db: Session, key: ChildKey, cost: float) -> bool:
     """
     Checks if adding the estimated cost would exceed the child key's budget limits.

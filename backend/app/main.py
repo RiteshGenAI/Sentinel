@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.init_db import init_db
-from app.api.v1.endpoints import auth, projects, ingest, budgets, admin, health, forecast, export, api_keys, providers, master_keys, child_keys, proxy, analytics
+from app.api.v1.endpoints import auth, projects, ingest, budgets, admin, health, forecast, export, api_keys, providers, master_keys, child_keys, proxy, analytics, telemetry
 from app.core.middleware import RequestLoggingMiddleware, ErrorHandlingMiddleware, RateLimitingMiddleware
 import logging
 
@@ -43,3 +43,4 @@ app.include_router(master_keys.router, prefix='/api/v1')
 app.include_router(child_keys.router, prefix='/api/v1')
 app.include_router(proxy.router, prefix='/api/v1')
 app.include_router(analytics.router, prefix='/api/v1')
+app.include_router(telemetry.router, prefix='/api/v1')

@@ -108,3 +108,31 @@ def get_provider(db: Session, provider_id: int) -> Provider | None:
 
 def get_provider_by_name(db: Session, name: str) -> Provider | None:
     return db.query(Provider).filter(Provider.name == name, Provider.is_active == True).first()
+
+from app.schemas.provider import ProviderCreate
+
+def create_provider(db: Session, payload: ProviderCreate) -> Provider:
+    existing = db.query(Provider).filter(Provider.name == payload.name.lower()).first()
+    if existing:
+        if not existing.is_active:
+            for var, val in payload.model_dump().items():
+                setattr(existing, var, val)
+            existing.is_active = True
+            db.commit()
+            db.refresh(existing)
+            return existing
+        raise HTTPException(status_code=400, detail=f"Provider name '{payload.name}' already exists.")
+    
+    provider = Provider(
+        name=payload.name.lower().strip(),
+        display_name=payload.display_name.strip(),
+        base_url=payload.base_url.strip(),
+        api_key_header=payload.api_key_header.strip(),
+        rate_limit_rpm=payload.rate_limit_rpm,
+        rate_limit_tpm=payload.rate_limit_tpm,
+        models_json=payload.models_json
+    )
+    db.add(provider)
+    db.commit()
+    db.refresh(provider)
+    return provider

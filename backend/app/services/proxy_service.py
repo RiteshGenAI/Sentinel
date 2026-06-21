@@ -114,6 +114,74 @@ async def proxy_chat_completions(db: Session, raw_child_key: str, request_body: 
     # 6. Send request and track
     start_time = time.time()
     try:
+        # If streaming is requested:
+        if request_body.get('stream'):
+            async def stream_response_generator():
+                completion_text = ""
+                try:
+                    async with httpx.AsyncClient(timeout=60.0) as client:
+                        async with client.stream("POST", url, json=request_body, headers=headers) as response:
+                            if response.status_code != 200:
+                                err_body = await response.aread()
+                                raise HTTPException(status_code=response.status_code, detail=err_body.decode() or "Error from provider")
+                            
+                            buffer = ""
+                            async for chunk_bytes in response.aiter_bytes():
+                                yield chunk_bytes
+                                
+                                # Decode and parse text for token estimation
+                                try:
+                                    chunk_str = chunk_bytes.decode('utf-8', errors='ignore')
+                                    buffer += chunk_str
+                                    while "\n" in buffer:
+                                        line, buffer = buffer.split("\n", 1)
+                                        line = line.strip()
+                                        if line.startswith("data: "):
+                                            data_str = line[6:]
+                                            if data_str == "[DONE]":
+                                                continue
+                                            try:
+                                                data_json = json.loads(data_str)
+                                                choices = data_json.get("choices", [])
+                                                if choices:
+                                                    delta = choices[0].get("delta", {})
+                                                    content = delta.get("content", "")
+                                                    if content:
+                                                        completion_text += content
+                                            except:
+                                                pass
+                                except:
+                                    pass
+                            
+                            duration_ms = (time.time() - start_time) * 1000
+                            # Estimate completion tokens: ~4 characters per token
+                            completion_tokens_count = max(1, len(completion_text) // 4)
+                            actual_cost = _estimate_cost(provider.name, model, prompt_tokens, completion_tokens_count)
+                            actual_tokens = prompt_tokens + completion_tokens_count
+                            
+                            # Track usage in database
+                            track_master_key_usage(db, master_key, actual_cost, actual_tokens, child_key.id, '/proxy/chat/completions', 200)
+                            track_child_key_usage(db, child_key, actual_cost, actual_tokens, master_key.id, '/proxy/chat/completions', 200)
+                            
+                            llm_call = LLMCall(
+                                provider=provider.name,
+                                model=model,
+                                prompt_tokens=prompt_tokens,
+                                completion_tokens=completion_tokens_count,
+                                cost_usd=actual_cost,
+                                latency_ms=duration_ms,
+                                project_id=child_key.project_id
+                            )
+                            db.add(llm_call)
+                            db.commit()
+                            
+                except Exception as e:
+                    track_child_key_usage(db, child_key, 0, 0, master_key.id, '/proxy/chat/completions', 500, str(e)[:500])
+                    raise HTTPException(status_code=500, detail=f'Stream error: {str(e)}')
+            
+            return stream_response_generator()
+
+        # Non-streaming request flow
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(url, json=request_body, headers=headers)
             duration_ms = (time.time() - start_time) * 1000
