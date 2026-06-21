@@ -645,4 +645,4 @@ Configure the application using a `.env` file in the backend directory:
 ---
 
 ## License
-Sentinel is distributed under the Apache License 2.0. See `LICENSE` for details.
+Sentinel is distributed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
