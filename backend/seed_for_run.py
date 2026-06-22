@@ -46,7 +46,7 @@ def seed():
             return
 
         # 5. Add Master Key for Gemini
-        master_key_val = "AQ.Ab8RN6I9-B0sACg0Q7PBXV_kch1x5E2gk0fL2bGidRaXEaXKMg"
+        master_key_val = ""
         master_hash = hashlib.sha256(master_key_val.encode()).hexdigest()
         master = db.query(MasterKey).filter(MasterKey.key_hash == master_hash).first()
         if not master:
@@ -63,7 +63,7 @@ def seed():
             print("Seeded Gemini Master Key")
 
         # 5. Add Child Key
-        child_key_val = "sk_child_so8pjgNAnLgIBD2igIiIGMUglswJjt0wVKMsi23hJJc"
+        child_key_val = ""
         child_hash = hashlib.sha256(child_key_val.encode()).hexdigest()
         child = db.query(ChildKey).filter(ChildKey.key_hash == child_hash).first()
         if not child:
