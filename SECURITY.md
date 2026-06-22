@@ -15,7 +15,7 @@ We take the security of Sentinel Full-Stack RBAC project seriously. If you belie
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report security vulnerabilities by emailing us at **security@example.com** (please replace this with your actual security contact email).
+Instead, please report security vulnerabilities by emailing us at **riteshpatilgenaiofficial@gmail.com** (please replace this with your actual security contact email).
 
 ### What to Include in a Security Report
 To help us triage and resolve the issue quickly, please include:
