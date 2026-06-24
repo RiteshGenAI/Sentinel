@@ -1,4 +1,5 @@
 import secrets
+import os
 import hashlib
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
@@ -9,9 +10,16 @@ from app.models.extra import Provider, MasterKey, ChildKey, ChildKeyUsage, Maste
 from app.services.provider_service import get_provider
 
 MASTER_KEY_PREFIX = 'mk_'
+KEY_HASH_ITERATIONS = 210_000
+KEY_HASH_PEPPER = os.getenv('KEY_HASH_PEPPER', 'change-me-in-production').encode('utf-8')
 
 def _hash_key(key: str) -> str:
-    return hashlib.sha256(key.encode()).hexdigest()
+    return hashlib.pbkdf2_hmac(
+        'sha256',
+        key.encode('utf-8'),
+        KEY_HASH_PEPPER,
+        KEY_HASH_ITERATIONS
+    ).hex()
 
 def _generate_key(prefix: str = 'sk_child_') -> str:
     return prefix + secrets.token_urlsafe(32)
