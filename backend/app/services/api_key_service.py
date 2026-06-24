@@ -7,9 +7,29 @@ from app.models.extra import ApiKey, ApiKeyUsage
 from app.schemas.api_key import ApiKeyCreate
 
 API_KEY_PREFIX = 'sk_sentinel_'
+_KDF_ALG = "pbkdf2_sha256"
+_KDF_ITERATIONS = 210000
+_KDF_SALT_BYTES = 16
+_KDF_DKLEN = 32
 
 def _hash_key(key: str) -> str:
-    return hashlib.sha256(key.encode()).hexdigest()
+    salt = secrets.token_bytes(_KDF_SALT_BYTES)
+    dk = hashlib.pbkdf2_hmac("sha256", key.encode(), salt, _KDF_ITERATIONS, dklen=_KDF_DKLEN)
+    return f"{_KDF_ALG}${_KDF_ITERATIONS}${salt.hex()}${dk.hex()}"
+
+def _verify_key(key: str, stored_hash: str) -> bool:
+    try:
+        alg, iterations_str, salt_hex, expected_hex = stored_hash.split("$", 3)
+        if alg != _KDF_ALG:
+            return False
+        iterations = int(iterations_str)
+        salt = bytes.fromhex(salt_hex)
+        expected = bytes.fromhex(expected_hex)
+    except (ValueError, TypeError):
+        return False
+
+    derived = hashlib.pbkdf2_hmac("sha256", key.encode(), salt, iterations, dklen=len(expected))
+    return secrets.compare_digest(derived, expected)
 
 def _generate_key() -> str:
     return API_KEY_PREFIX + secrets.token_urlsafe(32)
@@ -40,8 +60,9 @@ def create_api_key(db: Session, user_id: int, payload: ApiKeyCreate) -> tuple[Ap
 def validate_api_key(db: Session, raw_key: str | None) -> ApiKey | None:
     if not raw_key:
         return None
-    key_hash = _hash_key(raw_key)
-    key = db.query(ApiKey).filter(ApiKey.key_hash == key_hash, ApiKey.is_active == True).first()
+
+    keys = db.query(ApiKey).filter(ApiKey.is_active == True).all()
+    key = next((k for k in keys if _verify_key(raw_key, k.key_hash)), None)
     if not key:
         return None
     if key.expires_at and key.expires_at.replace(tzinfo=None) < datetime.now(timezone.utc).replace(tzinfo=None):
